@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   licensed:
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
 
     # always skip
     if: false

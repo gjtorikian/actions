@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   test-build:
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
