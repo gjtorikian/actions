@@ -166,7 +166,7 @@ jobs:
           submodules: recursive
 
       - name: Set up languages
-        uses: yettoapp/actions/setup-languages@main
+        uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
           node: ${{ inputs.requires_node }}
@@ -210,7 +210,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Set up languages
-        uses: yettoapp/actions/setup-languages@main
+        uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
           node: ${{ inputs.requires_node == true }}

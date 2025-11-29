@@ -34,14 +34,14 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - uses: yettoapp/actions/setup-languages@main
+      - uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: ${{ inputs.ruby }}
           node: ${{ inputs.node }}
 
       - name: Download license script
         run: |
-          curl -o $PWD/script/licenses.sh https://raw.githubusercontent.com/yettoapp/actions/refs/heads/main/script/licenses
+          curl -o $PWD/script/licenses.sh https://raw.githubusercontent.com/gjtorikian/actions/refs/heads/main/script/licenses
           chmod +x $PWD/script/licenses.sh
 
       - name: Run license verify
@@ -69,7 +69,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[auto-license]: Update license information"
-
-          commit_user_name: Sisyphus
-          commit_user_email: sisyphus@yetto.app
-          commit_author: Sisyphus <sisyphus@yetto.app>
+          commit_user_name: gjtorikian-bot
+          commit_user_email: 246872175+gjtorikian-bot@users.noreply.github.com
+          commit_author: gjtorikian-bot <246872175+gjtorikian-bot@users.noreply.github.com>

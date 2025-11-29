@@ -34,7 +34,7 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - uses: yettoapp/actions/setup-fly@main
+      - uses: gjtorikian/actions/setup-fly@main
 
       - name: Build production Dockerfile
         timeout-minutes: 10

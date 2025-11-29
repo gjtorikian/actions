@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.gh_token }}
 
       - name: Set up languages
-        uses: yettoapp/actions/setup-languages@main
+        uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: ${{ inputs.ruby }}
 
@@ -43,6 +43,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[auto-lint]: Lint i18n files"
-          commit_user_name: Sisyphus
-          commit_user_email: sisyphus@yetto.app
-          commit_author: Sisyphus <sisyphus@yetto.app>
+          commit_user_name: gjtorikian-bot
+          commit_user_email: 246872175+gjtorikian-bot@users.noreply.github.com
+          commit_author: gjtorikian-bot <246872175+gjtorikian-bot@users.noreply.github.com>

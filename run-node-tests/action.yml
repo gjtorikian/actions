@@ -19,7 +19,7 @@ runs:
         echo "Skipping test build because commit message contains `[skip test]`"
         exit 0
 
-    - uses: yettoapp/actions/setup-languages@main
+    - uses: gjtorikian/actions/setup-languages@main
       with:
         node: true
 

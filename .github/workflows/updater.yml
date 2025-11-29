@@ -38,7 +38,7 @@ jobs:
             exit 0;
           fi
 
-      - uses: yettoapp/actions/setup-languages@main
+      - uses: gjtorikian/actions/setup-languages@main
         if: ${{ github.event.inputs.action == 'hephaestus' }}
         with:
           ruby: true
@@ -74,7 +74,7 @@ jobs:
         run: |
           if [ -f .ruby-version ]; then
             echo ${{ github.event.inputs.value }} > .ruby-version
-          elif [ "$GITHUB_REPOSITORY" == "yettoapp/images" ]; then
+          elif [ "$GITHUB_REPOSITORY" == "gjtorikian/images" ]; then
            find . -type f -name 'Dockerfile' -exec perl -pi -w -e 's/RUBY_VERSION=.+/RUBY_VERSION=${{ github.event.inputs.value }}/g;' {} +
           else
             echo "I have no idea what you want me to do with Ruby."

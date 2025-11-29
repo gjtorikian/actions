@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.gh_token }}
 
       - name: Set up Ruby
-        uses: yettoapp/actions/setup-languages@main
+        uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
 
@@ -38,7 +38,7 @@ jobs:
           token: ${{ secrets.gh_token }}
 
       - name: Set up Ruby
-        uses: yettoapp/actions/setup-languages@main
+        uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
 

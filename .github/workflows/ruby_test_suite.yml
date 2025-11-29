@@ -30,11 +30,11 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - uses: yettoapp/actions/setup-languages@main
+      - uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
 
-      - uses: yettoapp/actions/run-ruby-tests@main
+      - uses: gjtorikian/actions/run-ruby-tests@main
         id: run-tests
         timeout-minutes: 10
         with:

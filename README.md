@@ -1,6 +1,6 @@
-# GitHub Actions developed for Yetto development
+# GitHub Actions for all my stuff
 
-In this repository are a list of actions which we've found useful while building Yetto!
+In this repository are a list of actions which I've found useful!
 
 You can find more information about the specific inputs and outputs of each workflow in the corresponding folders, but a general overview of each action is defined below.
 

@@ -4,7 +4,7 @@ description: "Validates that all the Sorbet types are up to date."
 runs:
   using: "composite"
   steps:
-    - uses: yettoapp/actions/setup-languages@main
+    - uses: gjtorikian/actions/setup-languages@main
       with:
         ruby: true
 
@@ -37,9 +37,8 @@ runs:
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
         commit_message: "[auto-rbi]: Update RBI files"
-
-        commit_user_name: Sisyphus
-        commit_user_email: sisyphus@yetto.app
-        commit_author: Sisyphus <sisyphus@yetto.app>
+        commit_user_name: gjtorikian-bot
+        commit_user_email: 246872175+gjtorikian-bot@users.noreply.github.com
+        commit_author: gjtorikian-bot <246872175+gjtorikian-bot@users.noreply.github.com>
 
         file_pattern: sorbet/

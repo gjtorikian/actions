@@ -76,7 +76,7 @@ jobs:
             });
             return deployment.data.id
 
-      - uses: yettoapp/actions/setup-fly@main
+      - uses: gjtorikian/actions/setup-fly@main
 
       - name: Set deploy flag
         id: deploy_flag

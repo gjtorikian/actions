@@ -45,7 +45,7 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - uses: yettoapp/actions/setup-languages@main
+      - uses: gjtorikian/actions/setup-languages@main
         with:
           ruby: true
           node: ${{ inputs.system_tests == true }}
@@ -82,7 +82,7 @@ jobs:
           export PRECOMPILING=1
           bin/rails assets:precompile
 
-      - uses: yettoapp/actions/run-ruby-tests@main
+      - uses: gjtorikian/actions/run-ruby-tests@main
         timeout-minutes: 10
         id: run-tests
         with:
