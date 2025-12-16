@@ -3,6 +3,9 @@ name: "Automerge Dependabot and Sisyphus PRs"
 
 on:
   workflow_call:
+    secrets:
+      gh_token:
+        required: true
     inputs:
       automerge:
         required: false
@@ -18,19 +21,19 @@ jobs:
 
     env:
       PR_URL: ${{ github.event.pull_request.html_url }}
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      GITHUB_TOKEN: ${{secrets.gh_token}}
 
     steps:
       - uses: actions/checkout@v6
         with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
+          token: "${{ secrets.gh_token }}"
 
       - if: ${{ github.actor == 'dependabot[bot]' }}
         name: Fetch Dependabot metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@v2
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          github-token: "${{ secrets.gh_token }}"
 
       - if: ${{ github.actor != 'dependabot[bot]' && startsWith(github.event.pull_request.title, '[auto') }}
         name: Approve automated PR

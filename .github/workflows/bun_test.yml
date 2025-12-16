@@ -10,15 +10,15 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip test]')"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - name: Set up Node
-        uses: gjtorikian/actions/setup-languages/node@main
+      - name: Set up Bun
+        uses: gjtorikian/actions/setup-languages/bun@main
 
       - name: Run tests
         shell: bash
-        run: npm test
+        run: bun run test test
 
