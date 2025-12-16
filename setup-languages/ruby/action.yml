@@ -1,0 +1,19 @@
+---
+name: "Sets up Ruby's needs"
+description: "Based on the provided inputs, sets up the Ruby environment dependencies"
+inputs:
+  ruby-version:
+    description: "Ruby version to use"
+    default: "default"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: ruby/setup-ruby@v1
+      with:
+        bundler-cache: true
+        ruby-version: ${{ inputs.ruby-version }}
+      env:
+        RAILS_ENV: test
+        BUNDLE_WITH: "ci"
+
