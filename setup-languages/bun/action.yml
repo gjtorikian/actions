@@ -1,0 +1,18 @@
+---
+name: "Sets up Bun's needs"
+description: "Based on the provided inputs, sets up the Bun environment dependencies"
+inputs:
+  bun-version:
+    description: "Bun version to use"
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Install bun dependencies
+      shell: bash
+      run: |
+        bun install
