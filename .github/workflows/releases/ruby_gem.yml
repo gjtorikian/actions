@@ -1,0 +1,222 @@
+name: Release and publish
+
+on:
+  workflow_call:
+    secrets:
+      gh_token:
+        required: true
+    inputs:
+      gem_name:
+        required: true
+        type: string
+      include_musl:
+        required: false
+        default: false
+        type: boolean
+      oxidized:
+        required: false
+        default: false
+        type: boolean
+      version_filepath:
+        required: true
+        type: string
+      prepare:
+        required: false
+        default: false
+        type: boolean
+      release:
+        required: false
+        default: false
+        type: boolean
+      oidc_role_to_assume:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+env:
+  SUPPORTED_RUBY_VERSIONS: "3.2,3.3,3.4"
+  LATEST_RUBY_VERSION: "3.4"
+
+jobs:
+  prepare:
+    if: ${{ inputs.prepare }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.gh_token }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Actions Auto Build"
+
+      - name: Get current version
+        id: version-label
+        run: |
+          VERSION=$(grep VERSION ${{ inputs.version_filepath }} | head -n 1 | cut -d'"' -f2)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Get previous version
+        id: previous-version-label
+        run: |
+          PREVIOUS_VERSION=$(gh api "/repos/${{ github.repository }}/tags?per_page=1" | jq -r '.[] | .name?')
+          echo "previous_version=${PREVIOUS_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        id: generate-release-notes
+        run: |
+          generate() {
+            gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name='v${{ steps.version-label.outputs.version }}' \
+            -f previous_tag='v${{ steps.previous-version-label.outputs.previous_version }}' \
+            | jq -r ".body"
+          }
+          echo "changelog<<EOF"$'\n'"$(generate)"$'\n'EOF >> $GITHUB_OUTPUT
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "# [v${{ steps.version-label.outputs.version }}] - `date +%d-%m-%Y`" >> CHANGELOG.md.tmp
+          echo "${{steps.generate-release-notes.outputs.changelog}}" >> CHANGELOG.md.tmp
+          echo '-n' >> CHANGELOG.md
+          cat CHANGELOG.md >> CHANGELOG.md.tmp
+          mv CHANGELOG.md.tmp CHANGELOG.md
+
+      - name: Commit Changelog
+        run: git add -f CHANGELOG.md
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "[skip test] update changelog"
+          title: "[skip test] Release v${{ steps.version-label.outputs.version }}"
+          body: >
+            This is an automated PR to build the latest changelog. Upon merging,
+            a new release will be created and published to RubyGems.<br/><br/>
+            Due to security considerations, PRs created by GitHub Actions cannot
+            be merged automatically. Please review the changes and merge the PR.<br/><br/>
+            If you require the test suites to run, you can close the PR and reopen it to trigger
+            those workflows.
+          delete-branch: true
+          labels: release
+          branch: "release/v${{ steps.version-label.outputs.version }}"
+
+      - name: Enable Pull Request Automerge
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.gh_token }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+
+  release:
+    if: ${{ inputs.release }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.gh_token }}
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version-label.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Actions Auto Build"
+
+      - name: Get current version
+        id: version-label
+        run: |
+          VERSION=$(grep VERSION ${{ inputs.version_filepath }} | head -n 1 | cut -d'"' -f2)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git tag -a v${{ steps.version-label.outputs.version }} -m "Release v${{ steps.version-label.outputs.version }}"
+          git push origin --tags
+
+      - name: Publish GitHub release
+        run: |
+          gh release create v${{ steps.version-label.outputs.version }} --generate-notes
+
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: rubygems/configure-rubygems-credentials@main
+        with:
+          role-to-assume: ${{ inputs.oidc_role_to_assume }}
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Publish to RubyGems
+        run: |
+          bundle exec rake package
+          for gem in pkg/${{ inputs.gem_name }}-${{ needs.release.outputs.version }}.gem ; do
+            gem push "$gem" --host https://rubygems.org
+          done
+
+  oxidized_publish:
+    needs: release
+    if: ${{ inputs.oxidized == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - x86_64-linux
+          - aarch64-linux
+
+          - x86_64-linux-musl
+          - aarch64-linux-musl
+
+          - x86_64-darwin
+          - arm64-darwin
+
+          - x64-mingw-ucrt
+
+        # include musl only when asked
+        include_musl:
+          - ${{ inputs.include_musl }}
+        exclude:
+          - include_musl: false
+            platform: x86_64-linux-musl
+          - include_musl: false
+            platform: aarch64-linux-musl
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rubygems/configure-rubygems-credentials@main
+        with:
+            role-to-assume: ${{ inputs.oidc_role_to_assume }}
+
+      - uses: actions/checkout@v6
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "${{ env.LATEST_RUBY_VERSION }}"
+
+      - uses: oxidize-rb/actions/cross-gem@v1
+        id: cross-gem
+        with:
+          platform: ${{ matrix.platform }}
+          ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
+
+      - name: Publish to RubyGems
+        env:
+          GEM_OUTPUT_PATH: ${{ steps.cross-gem.outputs.gem-path }}
+        run: |
+          gem push "${GEM_OUTPUT_PATH}" || true
+          echo "Pushed ${GEM_OUTPUT_PATH}"
