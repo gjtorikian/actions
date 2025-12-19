@@ -36,6 +36,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: write
+  id-token: write
 
 env:
   SUPPORTED_RUBY_VERSIONS: "3.2,3.3,3.4"
