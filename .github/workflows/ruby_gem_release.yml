@@ -184,6 +184,7 @@ jobs:
         platform:
           - x86_64-linux
           - aarch64-linux
+          - arm-linux
 
           - x86_64-linux-musl
           - aarch64-linux-musl
