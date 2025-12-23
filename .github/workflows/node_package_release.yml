@@ -110,6 +110,14 @@ jobs:
           fi
           mv CHANGELOG.tmp CHANGELOG.md
 
+      - name: Set up Node.js
+        if: ${{ steps.check-tag.outputs.exists == 'false' && inputs.build_dist }}
+        uses: gjtorikian/actions/setup-languages/node@main
+
+      - name: Build dist
+        if: ${{ steps.check-tag.outputs.exists == 'false' && inputs.build_dist }}
+        run: npm run build
+
       - name: Create release branch and PR
         id: cpr
         if: steps.check-tag.outputs.exists == 'false'
@@ -129,6 +137,7 @@ jobs:
           branch: "release/v${{ steps.version.outputs.version }}"
 
       - name: Enable Pull Request Automerge
+        if: steps.check-tag.outputs.exists == 'false'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.gh_token }}
@@ -153,21 +162,6 @@ jobs:
           VERSION=$(jq -r '.version' package.json)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
-
-      - name: Build dist
-        if: ${{ inputs.build_dist }}
-        run: npm run build
-
-      - name: Commit dist
-        if: ${{ inputs.build_dist }}
-        env:
-          GH_TOKEN: ${{ secrets.gh_token }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f dist/
-          git diff --cached --quiet || git commit -m "build dist for v${{ steps.version.outputs.version }}"
-          git push origin main
 
       - name: Create and push tag
         run: |
