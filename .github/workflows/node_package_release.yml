@@ -69,8 +69,10 @@ jobs:
       - name: Get previous tag
         if: steps.check-tag.outputs.exists == 'false'
         id: prev-tag
+        env:
+          GH_TOKEN: ${{ secrets.gh_token }}
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          PREV_TAG=$(gh api repos/${{ github.repository }}/tags --jq '.[0].name')
           echo "tag=${PREV_TAG}" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
