@@ -34,7 +34,7 @@ runs:
       run: $GITHUB_ACTION_PATH/../script/sorbet --update
 
     - name: Commit types
-      uses: stefanzweifel/git-auto-commit-action@v4
+      uses: stefanzweifel/git-auto-commit-action@v7
       with:
         commit_message: "[auto-rbi]: Update RBI files"
         commit_user_name: gjtorikian-bot
