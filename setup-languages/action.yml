@@ -53,7 +53,7 @@ runs:
       run: |
         npm ci
 
-    - uses: denoland/setup-deno@v1
+    - uses: denoland/setup-deno@v2
       if: ${{ inputs.deno == 'true' }}
       with:
         deno-version: ${{ inputs.deno-version }}
