@@ -5,6 +5,14 @@ inputs:
   github_token:
     description: "The token used when calling GitHub API"
     required: true
+  compile:
+    description: "Whether to compile native extensions before running tests"
+    required: false
+    default: "false"
+  coverage:
+    description: "Whether to collect coverage information"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -12,16 +20,18 @@ runs:
     - name: Run tests
       shell: bash
       run: |
-        script/ci
+        script/ci || bundle exec rake test
       env:
-        COVERAGE: "1"
+        COVERAGE: "${{ inputs.coverage }}"
 
     - name: Install helpers
+      if: ${{ inputs.coverage == 'true' }}
       shell: bash
       run: |
         echo "$GITHUB_ACTION_PATH/bin" >> $GITHUB_PATH
 
-    - name: Post coverage report
+    - name: Create coverage report
+      if: ${{ inputs.coverage == 'true' }}
       shell: bash
       id: coverage_report
       env:
@@ -31,8 +41,9 @@ runs:
 
         echo "report<<EOF"$'\n'"$coverage_report"$'\n'EOF >> $GITHUB_OUTPUT
 
-    # - uses: mshick/add-pr-comment@v2
-    #   if: "${{ steps.coverage_report.outputs.report != '' }}"
+    # - name: Post coverage report
+    #.  uses: mshick/add-pr-comment@v2
+    #   if: "${{ steps.coverage_report.outputs.report != '' }} && ${{ inputs.coverage == 'true' }}"
     #   with:
     #     message: |
     #       <!-- type: code_coverage -->

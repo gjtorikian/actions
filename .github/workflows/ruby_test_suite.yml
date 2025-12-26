@@ -6,6 +6,17 @@ on:
     secrets:
       gh_token:
         required: true
+    inputs:
+      compile:
+        description: "Whether to compile native extensions before running tests"
+        required: false
+        default: false
+        type: boolean
+      coverage:
+        description: "Whether to collect coverage information"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -13,8 +24,7 @@ permissions:
 
 jobs:
   test:
-    runs-on:
-      labels: Ubuntu-TestRunner
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
@@ -30,12 +40,11 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
 
-      - uses: gjtorikian/actions/setup-languages@main
-        with:
-          ruby: true
+      - uses: gjtorikian/actions/setup-languages/ruby@main
 
       - uses: gjtorikian/actions/run-ruby-tests@main
         id: run-tests
         timeout-minutes: 10
         with:
           github_token: ${{ secrets.gh_token }}
+          compile: ${{ inputs.compile }}

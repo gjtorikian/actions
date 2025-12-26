@@ -35,6 +35,3 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[auto-lint]: Lint files"
-          commit_user_name: gjtorikian-bot
-          commit_user_email: 246872175+gjtorikian-bot@users.noreply.github.com
-          commit_author: gjtorikian-bot <246872175+gjtorikian-bot@users.noreply.github.com>
