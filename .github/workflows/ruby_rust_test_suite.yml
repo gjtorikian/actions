@@ -28,28 +28,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ["3.2", "3.3", "3.4", "4.0"]
-        platform:
-          - x86_64-linux
-          - aarch64-linux
-          - arm-linux
-
-          - x86_64-linux-musl
-          - aarch64-linux-musl
-
-          - x86_64-darwin
-          - arm64-darwin
-
-          - x64-mingw-ucrt
-
-        # include musl only when asked
-        include_musl:
-          - ${{ inputs.include_musl }}
-        exclude:
-          - include_musl: false
-            platform: x86_64-linux-musl
-          - include_musl: false
-            platform: aarch64-linux-musl
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        ruby-version:
+          - 4.0 # LATEST_RUBY_VERSION
+          - ruby-head
 
     steps:
       - uses: actions/checkout@v6
