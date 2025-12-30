@@ -7,11 +7,6 @@ on:
       gh_token:
         required: true
     inputs:
-      compile:
-        description: "Whether to compile native extensions before running tests"
-        required: false
-        default: false
-        type: boolean
       coverage:
         description: "Whether to collect coverage information"
         required: false
@@ -59,4 +54,4 @@ jobs:
         timeout-minutes: 10
         with:
           github_token: ${{ secrets.gh_token }}
-          compile: ${{ inputs.compile }}
+          coverage: ${{ inputs.coverage }}

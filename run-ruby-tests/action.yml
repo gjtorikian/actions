@@ -5,10 +5,6 @@ inputs:
   github_token:
     description: "The token used when calling GitHub API"
     required: true
-  compile:
-    description: "Whether to compile native extensions before running tests"
-    required: false
-    default: "false"
   coverage:
     description: "Whether to collect coverage information"
     required: false
