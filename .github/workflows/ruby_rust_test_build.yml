@@ -16,13 +16,14 @@ on:
 
 env:
   CACHE_KEY_PREFIX: "cruby-v1"
-  SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
-  LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
 
 jobs:
   cruby-package:
     name: Compile native gem
     runs-on: ubuntu-latest
+    env:
+      SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
+      LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
     strategy:
       fail-fast: false
       matrix:

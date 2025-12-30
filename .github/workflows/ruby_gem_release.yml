@@ -38,10 +38,6 @@ permissions:
   actions: write
   id-token: write
 
-env:
-  SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
-  LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
-
 jobs:
   prepare:
     if: ${{ inputs.prepare }}
@@ -153,6 +149,8 @@ jobs:
   publish:
     needs: release
     runs-on: ubuntu-latest
+    env:
+      LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
 
     steps:
       - uses: rubygems/configure-rubygems-credentials@main
@@ -178,6 +176,9 @@ jobs:
   oxidized_publish:
     needs: release
     if: ${{ inputs.oxidized == true }}
+    env:
+      SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
+      LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
     strategy:
       fail-fast: false
       matrix:
