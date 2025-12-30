@@ -1,0 +1,75 @@
+name: CI
+concurrency:
+  group: "${{github.workflow}}-${{github.ref}}"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+    secrets:
+      gh_token:
+        required: true
+    inputs:
+      include_musl:
+        required: false
+        default: false
+        type: boolean
+      coverage:
+        description: "Whether to collect coverage information"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  CACHE_KEY_PREFIX: "cruby-v1"
+  SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
+  LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ${{ fromJSON(vars.SUPPORTED_RUBY_VERSIONS) }}
+        platform:
+          - x86_64-linux
+          - aarch64-linux
+          - arm-linux
+
+          - x86_64-linux-musl
+          - aarch64-linux-musl
+
+          - x86_64-darwin
+          - arm64-darwin
+
+          - x64-mingw-ucrt
+
+        # include musl only when asked
+        include_musl:
+          - ${{ inputs.include_musl }}
+        exclude:
+          - include_musl: false
+            platform: x86_64-linux-musl
+          - include_musl: false
+            platform: aarch64-linux-musl
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@main
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          rubygems: latest
+          bundler-cache: true
+          cargo-cache: true
+          cache-version: v1
+
+      - name: Compile native extensions
+        run: bundle exec rake compile
+
+      - uses: gjtorikian/actions/run-ruby-tests@main
+        id: run-tests
+        timeout-minutes: 10
+        with:
+          github_token: ${{ secrets.gh_token }}
+          coverage: ${{ inputs.coverage }}
