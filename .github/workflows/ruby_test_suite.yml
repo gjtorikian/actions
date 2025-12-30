@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      matrix:
+        description: "Whether to run tests against multiple Ruby versions"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -26,6 +31,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ${{ fromJSON(inputs.matrix && vars.SUPPORTED_RUBY_VERSIONS || format('["{0}"]', vars.LATEST_RUBY_VERSION)) }}
 
     steps:
       - if: ${{ contains(github.event.head_commit.message, '[skip test]') }}
@@ -41,6 +51,8 @@ jobs:
           token: ${{ secrets.gh_token }}
 
       - uses: gjtorikian/actions/setup-languages/ruby@main
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
 
       - uses: gjtorikian/actions/run-ruby-tests@main
         id: run-tests
