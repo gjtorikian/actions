@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ${{ fromJSON(vars.SUPPORTED_RUBY_VERSIONS) }}
+        ruby-version: ["3.2", "3.3", "3.4", "4.0"]
         platform:
           - x86_64-linux
           - aarch64-linux

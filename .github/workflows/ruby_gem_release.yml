@@ -150,7 +150,7 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     env:
-      LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
+      LATEST_RUBY_VERSION: "4.0"
 
     steps:
       - uses: rubygems/configure-rubygems-credentials@main
@@ -177,8 +177,8 @@ jobs:
     needs: release
     if: ${{ inputs.oxidized == true }}
     env:
-      SUPPORTED_RUBY_VERSIONS: ${{ join(fromJSON(vars.SUPPORTED_RUBY_VERSIONS), ',') }}
-      LATEST_RUBY_VERSION: ${{ vars.LATEST_RUBY_VERSION }}
+      SUPPORTED_RUBY_VERSIONS: "3.2,3.3,3.4,4.0"
+      LATEST_RUBY_VERSION: "4.0"
     strategy:
       fail-fast: false
       matrix:
