@@ -5,13 +5,6 @@ on:
       gh_token:
         required: true
 
-    inputs:
-      ruby:
-        description: "Set up Ruby environment"
-        required: false
-        default: false
-        type: boolean
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -22,9 +15,7 @@ jobs:
           token: ${{ secrets.gh_token }}
 
       - name: Set up languages
-        uses: gjtorikian/actions/setup-languages@main
-        with:
-          ruby: ${{ inputs.ruby }}
+        uses: gjtorikian/actions/setup-languages/ruby@main
 
       - name: Check (and correct) locale file normalization
         run: bundle exec i18n-tasks normalize
@@ -43,6 +34,3 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[auto-lint]: Lint i18n files"
-          commit_user_name: gjtorikian-bot
-          commit_user_email: 246872175+gjtorikian-bot@users.noreply.github.com
-          commit_author: gjtorikian-bot <246872175+gjtorikian-bot@users.noreply.github.com>
