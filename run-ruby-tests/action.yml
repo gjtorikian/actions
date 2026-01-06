@@ -16,7 +16,7 @@ runs:
     - name: Run tests
       shell: bash
       run: |
-        script/ci || bundle exec rake test
+        if [ -x script/ci ]; then script/ci; else bundle exec rake test; fi
       env:
         COVERAGE: "${{ inputs.coverage }}"
 
