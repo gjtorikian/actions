@@ -217,7 +217,7 @@ jobs:
         with:
           ruby-version: "${{ env.LATEST_RUBY_VERSION }}"
 
-      - uses: oxidize-rb/actions/cross-gem@v1
+      - uses: oxidize-rb/actions/cross-gem@main
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
