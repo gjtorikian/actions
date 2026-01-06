@@ -215,7 +215,8 @@ jobs:
       - name: Set up languages
         uses: gjtorikian/actions/setup-languages/ruby@main
         with:
-          ruby-version: "${{ env.LATEST_RUBY_VERSION }}"
+          # ought to be `${{ env.LATEST_RUBY_VERSION }}` but temporarily setting to work around glibc issues
+          ruby-version: "3.4"
 
       - uses: oxidize-rb/actions/cross-gem@main
         id: cross-gem
