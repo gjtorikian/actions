@@ -61,6 +61,7 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
+          mount-toolchains: "true"
 
       - name: Display structure of built gems
         run: ls -R

@@ -223,6 +223,7 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
+          mount-toolchains: "true"
 
       - name: Publish to RubyGems
         env:
