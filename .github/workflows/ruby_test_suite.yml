@@ -43,6 +43,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           token: ${{ secrets.gh_token }}
 
       - uses: gjtorikian/actions/setup-languages/ruby@main
