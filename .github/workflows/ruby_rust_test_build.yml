@@ -13,6 +13,10 @@ on:
         required: false
         default: false
         type: boolean
+      supported_ruby_versions:
+        required: false
+        default: "3.2,3.3,3.4,4.0"
+        type: string
 
 env:
   CACHE_KEY_PREFIX: "cruby-v1"
@@ -22,7 +26,7 @@ jobs:
     name: Compile native gem
     runs-on: ubuntu-latest
     env:
-      SUPPORTED_RUBY_VERSIONS: "3.2,3.3,3.4,4.0"
+      SUPPORTED_RUBY_VERSIONS: ${{ inputs.supported_ruby_versions }}
       LATEST_RUBY_VERSION: "4.0"
     strategy:
       fail-fast: false

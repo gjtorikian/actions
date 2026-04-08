@@ -31,6 +31,10 @@ on:
       oidc_role_to_assume:
         required: true
         type: string
+      supported_ruby_versions:
+        required: false
+        default: "3.2,3.3,3.4,4.0"
+        type: string
 
 permissions:
   contents: write
@@ -177,7 +181,7 @@ jobs:
     needs: release
     if: ${{ inputs.oxidized == true }}
     env:
-      SUPPORTED_RUBY_VERSIONS: "3.2,3.3,3.4,4.0"
+      SUPPORTED_RUBY_VERSIONS: ${{ inputs.supported_ruby_versions }}
       LATEST_RUBY_VERSION: "4.0"
     strategy:
       fail-fast: false
