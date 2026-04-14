@@ -177,7 +177,7 @@ jobs:
             gem push "$gem" --host https://rubygems.org
           done
 
-  oxidized_publish:
+  oxidized_build:
     needs: release
     if: ${{ inputs.oxidized == true }}
     env:
@@ -210,10 +210,6 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: rubygems/configure-rubygems-credentials@main
-        with:
-            role-to-assume: ${{ inputs.oidc_role_to_assume }}
-
       - uses: actions/checkout@v6
 
       - name: Set up languages
@@ -229,9 +225,31 @@ jobs:
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
           mount-toolchains: "true"
 
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem-${{ matrix.platform }}
+          path: ${{ steps.cross-gem.outputs.gem-path }}
+
+  oxidized_push:
+    needs: oxidized_build
+    if: ${{ inputs.oxidized == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rubygems/configure-rubygems-credentials@main
+        with:
+          role-to-assume: ${{ inputs.oidc_role_to_assume }}
+
+      - name: Download all gem artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gem-*
+          path: gems/
+          merge-multiple: true
+
       - name: Publish to RubyGems
-        env:
-          GEM_OUTPUT_PATH: ${{ steps.cross-gem.outputs.gem-path }}
         run: |
-          gem push "${GEM_OUTPUT_PATH}" || true
-          echo "Pushed ${GEM_OUTPUT_PATH}"
+          for gem in gems/*.gem; do
+            echo "Pushing ${gem}..."
+            gem push "${gem}"
+          done
