@@ -54,13 +54,13 @@ jobs:
             platform: aarch64-linux-musl
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
         with:
           ruby-version: "${{ env.LATEST_RUBY_VERSION }}"
 
-      - uses: oxidize-rb/actions/cross-gem@main
+      - uses: oxidize-rb/actions/cross-gem@e5f9a49a7812a078584072f6e3f657ad247c8771 # v1.4.4
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
@@ -71,7 +71,7 @@ jobs:
         run: ls -R
         working-directory: pkg/
 
-      - uses: oxidize-rb/actions/test-gem-build@main
+      - uses: oxidize-rb/actions/test-gem-build@e5f9a49a7812a078584072f6e3f657ad247c8771 # v1.4.4
         with:
           platform: ${{ matrix.platform }}
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"

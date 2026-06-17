@@ -86,7 +86,7 @@ jobs:
           echo "Skipping test workflow because commit message contains `[skip test]`"
           exit 0
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
@@ -111,7 +111,7 @@ jobs:
       - if: ${{ inputs.system_tests == true }}
         name: Cache assets
         id: cache-assets
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             public/vite-test
@@ -143,14 +143,14 @@ jobs:
 
       - if: ${{ always() && inputs.system_tests == true && steps.new-vite-cache-key.outputs.digest != steps.restored-vite-cache-key.outputs.digest }}
         name: Cache Vite assets
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             public/vite-test
             tmp/cache/vite
           key: asset-cache-${{ runner.os }}-${{ steps.new-vite-cache-key.outputs.digest }}
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ always() && inputs.system_tests == true && steps.run-tests.outcome == 'failure' }}
         with:
           name: capybara_failure_screenshots

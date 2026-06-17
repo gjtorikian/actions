@@ -32,7 +32,7 @@ jobs:
     name: Fly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Merge production branch
         if: ${{ inputs.forced == false && github.ref != 'refs/heads/production' }}
@@ -46,7 +46,7 @@ jobs:
 
       - name: Start deployment
         id: deployment
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           result-encoding: string
           github-token: ${{ secrets.gh_token }}
@@ -106,7 +106,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.fly_token }}
 
       - name: update deployment status
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         if: always()
         with:
           github-token: ${{ secrets.gh_token }}

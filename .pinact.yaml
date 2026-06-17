@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/suzuki-shunsuke/pinact/refs/heads/main/json-schema/pinact.json
+# pinact - https://github.com/suzuki-shunsuke/pinact
+version: 3
+
+rules:
+  # Our own monorepo actions are consumed via @main and publish no tags,
+  # so there is nothing to pin/convert them to. Skip them.
+  - ignore: true
+    conditions:
+      - expr: |
+          ActionName matches "^gjtorikian/actions(/.*)?$" && ActionVersion == "main"

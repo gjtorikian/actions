@@ -30,7 +30,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: ruby/setup-ruby@v1
+    - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
       if: ${{ inputs.ruby == 'true' }}
       with:
         bundler-cache: true
@@ -40,7 +40,7 @@ runs:
         BUNDLE_WITH: "ci"
 
     - name: Install Node
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
       if: ${{ inputs.node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
@@ -53,19 +53,19 @@ runs:
       run: |
         npm ci
 
-    - uses: denoland/setup-deno@v2
+    - uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
       if: ${{ inputs.deno == 'true' }}
       with:
         deno-version: ${{ inputs.deno-version }}
 
     - name: Install Rust
       if: ${{ inputs.rust == 'true' }}
-      uses: dtolnay/rust-toolchain@master
+      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
       with:
         toolchain: stable
         targets: ${{ inputs.rust-targets }}
 
-    - uses: Swatinem/rust-cache@v2
+    - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       if: ${{ inputs.rust == 'true' }}
       with:
         cache-all-crates: "true"

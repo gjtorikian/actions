@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Repeat it back
         run: |
@@ -54,7 +54,7 @@ jobs:
       - name: Create Hephaestus Pull Request
         id: hephaestus-pr
         if: ${{ github.event.inputs.action == 'hephaestus' }}
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           add-paths: "Gemfile.lock"
           commit-message: "Update Hephaestus to v${{ env.HEPHAESTUS_VERSION }}"
@@ -84,7 +84,7 @@ jobs:
       - name: Create Ruby Pull Request
         id: ruby-pr
         if: ${{ github.event.inputs.action == 'ruby' }}
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: "Update Ruby to v${{ github.event.inputs.value }}"
           title: "Update Ruby to v${{ github.event.inputs.value }}"

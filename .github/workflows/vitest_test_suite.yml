@@ -25,7 +25,7 @@ jobs:
           echo "Skipping test workflow because commit message contains `[skip test]`"
           exit 0
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.gh_token }}
