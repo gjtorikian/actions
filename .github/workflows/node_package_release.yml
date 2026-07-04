@@ -136,13 +136,6 @@ jobs:
           labels: release
           branch: "release/v${{ steps.version.outputs.version }}"
 
-      - name: Enable Pull Request Automerge
-        if: steps.check-tag.outputs.exists == 'false'
-        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d # v3.0.0
-        with:
-          token: ${{ secrets.gh_token }}
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-
   release:
     if: ${{ inputs.release }}
     runs-on: ubuntu-latest
