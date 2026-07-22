@@ -219,11 +219,48 @@ jobs:
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
           mount-toolchains: "true"
 
+      # rb-sys has no `arm-linux-gnu` alias or `arm-linux-musl` toolchain, so cross-gem can only
+      # produce a bare `arm-linux` (glibc) gem. Without the explicit `-gnu` libc tag, RubyGems
+      # installs that glibc binary onto musl (Alpine) arm hosts, where it fails to load at runtime.
+      # Re-tag the built gem as `arm-linux-gnu` so musl hosts fall through to compiling from source.
+      # See https://github.com/gjtorikian/commonmarker/issues/476.
+      - name: Re-tag arm-linux gem as arm-linux-gnu
+        id: retag-arm
+        if: matrix.platform == 'arm-linux'
+        shell: bash
+        env:
+          ORIG_GEM: ${{ steps.cross-gem.outputs.gem-path }}
+        run: |
+          set -euo pipefail
+          ruby - <<'RUBY'
+          require "rubygems/package"
+          require "fileutils"
+
+          orig = ENV.fetch("ORIG_GEM")
+          target = "arm-linux-gnu"
+
+          pkg = Gem::Package.new(orig)
+          spec = pkg.spec.dup
+          spec.platform = target
+
+          workdir = File.join(File.dirname(orig), "retag-#{target}")
+          FileUtils.rm_rf(workdir)
+          FileUtils.mkdir_p(workdir)
+          pkg.extract_files(workdir)
+
+          built = Dir.chdir(workdir) { File.expand_path(Gem::Package.build(spec)) }
+          dest = File.join(File.dirname(orig), File.basename(built))
+          FileUtils.mv(built, dest) unless dest == built
+
+          File.open(ENV.fetch("GITHUB_OUTPUT"), "a") { |f| f.puts("gem-path=#{dest}") }
+          warn "Re-tagged #{orig} -> #{dest}"
+          RUBY
+
       - name: Upload gem artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gem-${{ matrix.platform }}
-          path: ${{ steps.cross-gem.outputs.gem-path }}
+          path: ${{ steps.retag-arm.outputs.gem-path || steps.cross-gem.outputs.gem-path }}
 
   oxidized_push:
     needs: oxidized_build
