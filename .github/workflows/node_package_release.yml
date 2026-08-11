@@ -43,6 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       - name: Configure Git
@@ -50,91 +51,45 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "Actions Auto Build"
 
-      - name: Get current version
-        id: version
-        run: |
-          VERSION=$(jq -r '.version' package.json)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Check if tag already exists
-        id: check-tag
-        run: |
-          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get previous tag
-        if: steps.check-tag.outputs.exists == 'false'
-        id: prev-tag
-        env:
-          GH_TOKEN: ${{ secrets.gh_token }}
-        run: |
-          PREV_TAG=$(gh api repos/${{ github.repository }}/tags --jq '.[0].name')
-          echo "tag=${PREV_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Generate release notes
-        if: steps.check-tag.outputs.exists == 'false'
-        id: notes
-        env:
-          GH_TOKEN: ${{ secrets.gh_token }}
-        run: |
-          if [ -n "${{ steps.prev-tag.outputs.tag }}" ]; then
-            NOTES=$(gh api \
-              --method POST \
-              -H "Accept: application/vnd.github+json" \
-              /repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name='v${{ steps.version.outputs.version }}' \
-              -f previous_tag_name='${{ steps.prev-tag.outputs.tag }}' \
-              | jq -r ".body")
-          else
-            NOTES="Initial release"
-          fi
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Update changelog
-        if: steps.check-tag.outputs.exists == 'false'
-        shell: bash
-        run: |
-          # Prepend to CHANGELOG.md
-          echo "## v${{ steps.version.outputs.version }} - $(date +%Y-%m-%d)" > CHANGELOG.tmp
-          echo "" >> CHANGELOG.tmp
-          echo "${{ steps.notes.outputs.notes }}" >> CHANGELOG.tmp
-          echo "" >> CHANGELOG.tmp
-          if [ -f CHANGELOG.md ]; then
-            cat CHANGELOG.md >> CHANGELOG.tmp
-          fi
-          mv CHANGELOG.tmp CHANGELOG.md
+      # release-please logic: scan conventional commits since the last tag,
+      # compute the next version, bump the version in package.json, and prepend
+      # a grouped changelog entry. Only `feat`/`fix`/`perf`/`BREAKING` commits
+      # trigger a release; other types are listed under "Miscellaneous Chores".
+      - name: Compute next release (release-please logic)
+        id: release-please
+        uses: gjtorikian/actions/release-please@main
+        with:
+          mode: compute
+          version_filepath: ${{ inputs.version_filepath }}
+          version_type: node
 
       - name: Set up Node.js
-        if: ${{ steps.check-tag.outputs.exists == 'false' && inputs.build_dist }}
+        if: ${{ steps.release-please.outputs.should_release == 'true' && inputs.build_dist }}
         uses: gjtorikian/actions/setup-languages/node@main
 
       - name: Build dist
-        if: ${{ steps.check-tag.outputs.exists == 'false' && inputs.build_dist }}
+        if: ${{ steps.release-please.outputs.should_release == 'true' && inputs.build_dist }}
         run: npm run build
 
-      - name: Create release branch and PR
-        id: cpr
-        if: steps.check-tag.outputs.exists == 'false'
+      - name: Create release PR
+        if: ${{ steps.release-please.outputs.should_release == 'true' }}
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          commit-message: "[skip test] update changelog for v${{ steps.version.outputs.version }}"
-          title: "[skip test] Release v${{ steps.version.outputs.version }}"
+          commit-message: "[skip test] release v${{ steps.release-please.outputs.next_version }}"
+          title: "[skip test] Release v${{ steps.release-please.outputs.next_version }}"
           body: >
-            This is an automated PR to build the latest changelog. Upon merging,
-            a new release will be created and published to npm.<br/><br/>
+            This is an automated release PR (release-please logic). It bumps the
+            version to v${{ steps.release-please.outputs.next_version }} and
+            updates CHANGELOG.md from conventional commits.<br/><br/>
+            Upon merging, a tag and GitHub release will be created and the package
+            will be published to npm.<br/><br/>
             Due to security considerations, PRs created by GitHub Actions cannot
             be merged automatically. Please review the changes and merge the PR.<br/><br/>
-            If you require the test suites to run, you can close the PR and reopen it to trigger
-            those workflows.
+            If you require the test suites to run, you can close the PR and reopen
+            it to trigger those workflows.
           delete-branch: true
           labels: release
-          branch: "release/v${{ steps.version.outputs.version }}"
+          branch: release-please
 
   release:
     if: ${{ inputs.release }}
@@ -161,10 +116,23 @@ jobs:
           git tag "v${{ steps.version.outputs.version }}"
           git push origin "v${{ steps.version.outputs.version }}"
 
+      - name: Extract release notes
+        id: notes
+        uses: gjtorikian/actions/release-please@main
+        with:
+          mode: notes
+          version: ${{ steps.version.outputs.version }}
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.gh_token }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
-            --title "v${{ steps.version.outputs.version }}" \
-            --generate-notes
+          if [ -s release-notes.md ]; then
+            gh release create "v${{ steps.version.outputs.version }}" \
+              --title "v${{ steps.version.outputs.version }}" \
+              --notes-file release-notes.md
+          else
+            gh release create "v${{ steps.version.outputs.version }}" \
+              --title "v${{ steps.version.outputs.version }}" \
+              --generate-notes
+          fi
