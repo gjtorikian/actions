@@ -1,0 +1,43 @@
+name: "Release Please Logic"
+description: "release-please-style release logic. In `compute` mode, scans conventional commits since the last tag, computes the next semantic version, bumps the version file, and prepends a grouped changelog entry to CHANGELOG.md. In `notes` mode, extracts a single release's notes from CHANGELOG.md into release-notes.md."
+
+inputs:
+  mode:
+    description: "compute | notes"
+    required: true
+  version_filepath:
+    description: "Path to the version file (compute mode). Ruby `VERSION = \"…\"` file or package.json."
+    required: false
+  version_type:
+    description: "ruby | node (compute mode). Selects how the version is read and written."
+    required: false
+  version:
+    description: "Version whose changelog section to extract (notes mode)"
+    required: false
+
+outputs:
+  should_release:
+    description: "true if release-triggering commits were found (compute mode)"
+    value: ${{ steps.rp.outputs.should_release }}
+  next_version:
+    description: "Computed next version, e.g. 1.5.3 (compute mode)"
+    value: ${{ steps.rp.outputs.next_version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: release-please
+      id: rp
+      shell: bash
+      env:
+        RP_MODE: ${{ inputs.mode }}
+        VERSION_FILEPATH: ${{ inputs.version_filepath }}
+        VERSION_TYPE: ${{ inputs.version_type }}
+        VERSION: ${{ inputs.version }}
+        REPO: ${{ github.repository }}
+      run: |
+        case "$RP_MODE" in
+          compute) node "${{ github.action_path }}/compute.js" ;;
+          notes)   node "${{ github.action_path }}/notes.js" ;;
+          *) echo "Unknown release-please mode: $RP_MODE" >&2; exit 1 ;;
+        esac
