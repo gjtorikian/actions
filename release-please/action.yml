@@ -19,6 +19,9 @@ outputs:
   should_release:
     description: "true if release-triggering commits were found (compute mode)"
     value: ${{ steps.rp.outputs.should_release }}
+  pending_release:
+    description: "true if the version file is ahead of the last tag but untagged — i.e. a merged release PR awaiting tag/publish (compute mode)"
+    value: ${{ steps.rp.outputs.pending_release }}
   next_version:
     description: "Computed next version, e.g. 1.5.3 (compute mode)"
     value: ${{ steps.rp.outputs.next_version }}

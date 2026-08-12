@@ -36,8 +36,9 @@ if (lastReleased && cmp(currentParsed, lastReleased) > 0) {
   let currentTagged = false;
   try { execSync(`git rev-parse v${current}`, { stdio: 'ignore' }); currentTagged = true; } catch {}
   if (!currentTagged) {
-    console.log(`A release for v${current} is pending (last tag ${lastTag}). Skipping release-please PR.`);
+    console.log(`A release for v${current} is pending (last tag ${lastTag}). Skipping release-please PR; signaling release.`);
     setOut('should_release', 'false');
+    setOut('pending_release', 'true');
     setOut('next_version', current);
     process.exit(0);
   }
