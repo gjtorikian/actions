@@ -58,10 +58,27 @@ let bump = 'none';
 const sections = { feat: [], fix: [], perf: [], revert: [], docs: [], misc: [] };
 const breaking = [];
 
+// Find the PR that introduced a commit so the changelog can link to it.
+// Squash merges carry the PR number in the subject ("feat: thing (#12)");
+// merge/rebase merges need a GitHub API lookup. Returns null if none found.
+const prForCommit = (hash) => {
+  try {
+    const out = execSync(`gh api "repos/${repo}/commits/${hash}/pulls" --jq '.[0].number'`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (/^\d+$/.test(out)) return out;
+  } catch {}
+  return null;
+};
+
 const entry = (scope, desc, hash) => {
-  const url = `https://github.com/${repo}/commit/${hash}`;
   const prefix = scope ? `**${scope}:** ` : '';
-  return `* ${prefix}${desc} ([${hash.slice(0, 7)}](${url}))`;
+  const squash = desc.match(/^(.*)\s+\(#(\d+)\)$/);
+  const pr = squash ? squash[2] : prForCommit(hash);
+  if (squash) desc = squash[1];
+  if (pr) return `* ${prefix}${desc} ([#${pr}](https://github.com/${repo}/pull/${pr}))`;
+  return `* ${prefix}${desc} ([${hash.slice(0, 7)}](https://github.com/${repo}/commit/${hash}))`;
 };
 
 for (const c of commits) {

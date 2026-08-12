@@ -35,6 +35,7 @@ runs:
         VERSION_TYPE: ${{ inputs.version_type }}
         VERSION: ${{ inputs.version }}
         REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         case "$RP_MODE" in
           compute) node "${{ github.action_path }}/compute.js" ;;
