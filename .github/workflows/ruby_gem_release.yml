@@ -178,6 +178,7 @@ jobs:
 
           - x86_64-linux-musl
           - aarch64-linux-musl
+          - arm-linux-musl
 
           - x86_64-darwin
           - arm64-darwin
@@ -192,6 +193,8 @@ jobs:
             platform: x86_64-linux-musl
           - include_musl: false
             platform: aarch64-linux-musl
+          - include_musl: false
+            platform: arm-linux-musl
 
     runs-on: ubuntu-latest
     steps:
@@ -210,11 +213,11 @@ jobs:
           ruby-versions: "${{ env.SUPPORTED_RUBY_VERSIONS }}"
           mount-toolchains: "true"
 
-      # rb-sys has no `arm-linux-gnu` alias or `arm-linux-musl` toolchain, so cross-gem can only
-      # produce a bare `arm-linux` (glibc) gem. Without the explicit `-gnu` libc tag, RubyGems
-      # installs that glibc binary onto musl (Alpine) arm hosts, where it fails to load at runtime.
-      # Re-tag the built gem as `arm-linux-gnu` so musl hosts fall through to compiling from source.
-      # See https://github.com/gjtorikian/commonmarker/issues/476.
+      # rb-sys has no `arm-linux-gnu` alias, so cross-gem can only produce a bare `arm-linux`
+      # (glibc) gem. Without the explicit `-gnu` libc tag, RubyGems installs that glibc binary
+      # onto musl (Alpine) arm hosts, where it fails to load at runtime. Re-tag the built gem as
+      # `arm-linux-gnu` so musl arm hosts resolve the `arm-linux-musl` gem (or compile from
+      # source) instead. See https://github.com/gjtorikian/commonmarker/issues/476.
       - name: Re-tag arm-linux gem as arm-linux-gnu
         id: retag-arm
         if: matrix.platform == 'arm-linux'
