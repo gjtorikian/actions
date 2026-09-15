@@ -97,6 +97,31 @@ let bump = 'none';
 const sections = { feat: [], fix: [], perf: [], revert: [], docs: [], misc: [] };
 const breaking = [];
 
+// A `BREAKING CHANGE:` footer (spec also allows `BREAKING-CHANGE:`) may wrap
+// across lines — commit bodies are conventionally wrapped at 72 columns.
+// Absorb continuation lines until a blank line or the next footer token
+// (`Token: value` / `Token #value`, per the conventional-commits footer
+// grammar). Matching only lines that *start* with the marker silently
+// truncated the first wrapped footer to its opening line.
+const FOOTER = /^[A-Za-z][\w-]*(?:: | #)/;
+const BREAKING = /^breaking[ -]change: ?/i;
+const breakingChanges = (body) => {
+  const out = [];
+  let cur = null;
+  for (const raw of body.split('\n')) {
+    const line = raw.trimEnd();
+    if (BREAKING.test(line)) {
+      if (cur !== null) out.push(cur);
+      cur = line.replace(BREAKING, '').trim();
+    } else if (cur !== null) {
+      if (line.trim() === '' || FOOTER.test(line)) { out.push(cur); cur = null; }
+      else cur = `${cur} ${line.trim()}`.trim();
+    }
+  }
+  if (cur !== null) out.push(cur);
+  return out.filter(Boolean);
+};
+
 // Find the PR that introduced a commit so the changelog can link to it.
 // Squash merges carry the PR number in the subject ("feat: thing (#12)");
 // merge/rebase merges need a GitHub API lookup. Returns null if none found.
@@ -125,7 +150,7 @@ for (const c of commits) {
   if (!m) continue; // non-conventional commits are ignored, per release-please
   const { type, scope, bang, desc } = m.groups;
   const t = type.toLowerCase();
-  const breakingLines = c.body.split('\n').filter((l) => /^breaking change: ?/i.test(l)).map((l) => l.replace(/^breaking change: ?/i, '').trim());
+  const breakingLines = breakingChanges(c.body);
   const isBreaking = bang === '!' || breakingLines.length > 0;
   if (isBreaking) {
     if (bump !== 'major') bump = 'major';
