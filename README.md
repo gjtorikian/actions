@@ -11,6 +11,7 @@ You can find more information about the specific inputs and outputs of each work
 - _browserlist_: Logic to update browserlistrc
 - _ruby_gem_release_: Logic to release a Ruby gem
 - _ruby_security_checks_: Logic to run Ruby security checks
+- _rust_crate_release_: Logic to release a standalone Rust crate to crates.io
 
 ## Composable actions
 

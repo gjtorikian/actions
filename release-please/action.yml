@@ -6,10 +6,10 @@ inputs:
     description: "compute | notes"
     required: true
   version_filepath:
-    description: "Path to the version file (compute mode). Ruby `VERSION = \"…\"` file or package.json."
+    description: "Path to the version file (compute mode). Ruby `VERSION = \"…\"` file, package.json, or Cargo.toml."
     required: false
   version_type:
-    description: "ruby | node (compute mode). Selects how the version is read and written."
+    description: "ruby | node | rust (compute mode). Selects how the version is read and written. `rust` scopes to the `[package]` section of Cargo.toml and also refreshes Cargo.lock, so `cargo` must be on PATH."
     required: false
   version:
     description: "Version whose changelog section to extract (notes mode)"

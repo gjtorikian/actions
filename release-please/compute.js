@@ -8,12 +8,50 @@ const repo = process.env.REPO;
 const readRe = versionType === 'ruby' ? /VERSION\s*=\s*"([^"]+)"/ : /"version"\s*:\s*"([^"]+)"/;
 const writeRe = versionType === 'ruby' ? /(VERSION\s*=\s*)"[^"]+"/ : /("version"\s*:\s*)"[^"]+"/;
 
+// Cargo.toml carries a `version =` line for every dependency table, so a flat
+// regex (or `grep -m1 '^version'`) picks up whichever comes first and breaks
+// the day a `[dependencies.foo]` section appears above `[package]`. Scope
+// every read and write to the `[package]` section. Line-based rather than one
+// regex so the section boundary is unambiguous: it ends at the next `[...]`
+// header or EOF. Workspace-inherited versions (`version.workspace = true`)
+// are not supported and fail loudly — there is no literal to bump.
+const cargoPackage = (text) => {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => /^\[package\]\s*$/.test(l));
+  if (start < 0) throw new Error(`No [package] section in ${versionFile}`);
+  let end = lines.findIndex((l, i) => i > start && /^\s*\[/.test(l));
+  if (end < 0) end = lines.length;
+  return { lines, start, end };
+};
+const cargoField = (key) => {
+  const { lines, start, end } = cargoPackage(fs.readFileSync(versionFile, 'utf8'));
+  const re = new RegExp(`^\\s*${key}\\s*=\\s*"([^"]+)"`);
+  for (let i = start + 1; i < end; i++) {
+    const m = lines[i].match(re);
+    if (m) return m[1];
+  }
+  throw new Error(`No ${key} = "..." in [package] of ${versionFile}`);
+};
+const writeCargoVersion = (v) => {
+  const { lines, start, end } = cargoPackage(fs.readFileSync(versionFile, 'utf8'));
+  for (let i = start + 1; i < end; i++) {
+    if (/^\s*version\s*=\s*"[^"]+"/.test(lines[i])) {
+      lines[i] = lines[i].replace(/(version\s*=\s*)"[^"]+"/, `$1"${v}"`);
+      fs.writeFileSync(versionFile, lines.join('\n'));
+      return;
+    }
+  }
+  throw new Error(`No version = "..." in [package] of ${versionFile}`);
+};
+
 const readVersion = () => {
+  if (versionType === 'rust') return cargoField('version');
   const m = fs.readFileSync(versionFile, 'utf8').match(readRe);
   if (!m) throw new Error(`No version found in ${versionFile}`);
   return m[1];
 };
 const writeVersion = (v) => {
+  if (versionType === 'rust') return writeCargoVersion(v);
   const content = fs.readFileSync(versionFile, 'utf8');
   fs.writeFileSync(versionFile, content.replace(writeRe, `$1"${v}"`));
 };
@@ -119,6 +157,17 @@ if (!nextV) {
 
 const nextVersion = fmt(nextV);
 writeVersion(nextVersion);
+
+// `cargo publish --locked` refuses a Cargo.lock whose entry for this crate
+// still carries the previous version, so the release PR must bump both files.
+// `-p <crate>` rewrites only that one entry and `--offline` guarantees every
+// dependency stays pinned exactly where it is — verified: "N unchanged
+// dependencies", same package count before and after.
+if (versionType === 'rust') {
+  const crate = cargoField('name');
+  if (!/^[A-Za-z0-9_-]+$/.test(crate)) throw new Error(`Unexpected crate name: ${crate}`);
+  execSync(`cargo update -p ${crate} --offline`, { stdio: 'inherit' });
+}
 
 const date = new Date().toISOString().slice(0, 10);
 const compare = lastReleased

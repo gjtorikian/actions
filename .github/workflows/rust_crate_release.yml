@@ -1,0 +1,211 @@
+name: Release and publish
+
+# Release flow for a standalone Rust crate. The Ruby+Rust (oxidized gem)
+# case is ruby_gem_release.yml; this one is for a crate that ships to
+# crates.io on its own. Same shape as node_package_release.yml:
+#
+#   prepare  -> compute the next version from conventional commits, bump
+#               Cargo.toml + Cargo.lock, prepend CHANGELOG.md, open a PR
+#   release  -> on the push that lands that PR, tag + GitHub release
+#   publish  -> cargo publish via crates.io trusted publishing (OIDC)
+
+on:
+  workflow_call:
+    secrets:
+      gh_token:
+        required: true
+    outputs:
+      version:
+        description: "Full version number"
+        value: ${{ jobs.release.outputs.version }}
+    inputs:
+      version_filepath:
+        default: Cargo.toml
+        type: string
+      prepare:
+        required: false
+        default: false
+        type: boolean
+      release:
+        required: false
+        default: false
+        type: boolean
+      publish:
+        description: "Push to crates.io after tagging. Turn off for a crate that is tagged but not published."
+        required: false
+        default: true
+        type: boolean
+      environment:
+        description: "GitHub environment the publish job runs in. Must match the environment named in the crate's trusted-publisher config on crates.io, if one is set there."
+        required: false
+        default: release
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  id-token: write
+
+jobs:
+  create-release-pr:
+    if: ${{ inputs.prepare }}
+    runs-on: ubuntu-latest
+    outputs:
+      pending_release: ${{ steps.release-please.outputs.pending_release }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Actions Auto Build"
+
+      # Unlike the ruby/node flows, the toolchain is needed *before* compute:
+      # the rust mode runs `cargo update -p <crate> --offline` so Cargo.lock
+      # lands in the release PR alongside Cargo.toml. Without that,
+      # `cargo publish --locked` in the publish job fails on the stale lock.
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
+
+      # release-please logic: scan conventional commits since the last tag,
+      # compute the next version, bump the version in Cargo.toml (scoped to
+      # its [package] section), refresh Cargo.lock, and prepend a grouped
+      # changelog entry. Only `feat`/`fix`/`perf`/`BREAKING` commits trigger
+      # a release; other types are listed under "Miscellaneous Chores".
+      - name: Compute next release (release-please logic)
+        id: release-please
+        uses: gjtorikian/actions/release-please@main
+        with:
+          mode: compute
+          version_filepath: ${{ inputs.version_filepath }}
+          version_type: rust
+
+      - name: Create release PR
+        if: ${{ steps.release-please.outputs.should_release == 'true' }}
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          commit-message: "[skip test] release v${{ steps.release-please.outputs.next_version }}"
+          title: "[skip test] Release v${{ steps.release-please.outputs.next_version }}"
+          body: >
+            This is an automated release PR (release-please logic). It bumps the
+            version to v${{ steps.release-please.outputs.next_version }} in
+            Cargo.toml and Cargo.lock and updates CHANGELOG.md from conventional
+            commits.<br/><br/>
+            Upon merging, a tag and GitHub release will be created and the crate
+            will be published to crates.io.<br/><br/>
+            Due to security considerations, PRs created by GitHub Actions cannot
+            be merged automatically. Please review the changes and merge the PR.<br/><br/>
+            If you require the test suites to run, you can close the PR and reopen
+            it to trigger those workflows.
+          delete-branch: true
+          labels: release
+          branch: release-please
+
+  # Runs on the push that lands a merged release PR (compute detects the
+  # version file ahead of the last tag and signals pending_release), or on an
+  # explicit release input (e.g. workflow_dispatch). Callers must not release
+  # from pull_request_target: the OIDC token minted under that trigger is not
+  # accepted for trusted publishing.
+  release:
+    needs: create-release-pr
+    if: ${{ !cancelled() && (inputs.release || needs.create-release-pr.outputs.pending_release == 'true') }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Read the version from the [package] section only. A plain
+      # `grep -m1 '^version'` would match the first dependency table that
+      # happens to precede [package]. No toolchain needed for this job.
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(awk '
+            /^\[package\][[:space:]]*$/ { in_pkg = 1; next }
+            /^[[:space:]]*\[/            { in_pkg = 0 }
+            in_pkg && /^[[:space:]]*version[[:space:]]*=/ {
+              sub(/^[^"]*"/, ""); sub(/".*$/, ""); print; exit
+            }
+          ' "${{ inputs.version_filepath }}")
+          if [ -z "$VERSION" ]; then
+            echo "No version = \"...\" under [package] in ${{ inputs.version_filepath }}" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      # Idempotent so a re-run or manual dispatch can resume a partial release.
+      - name: Create and push tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; skipping."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Extract release notes
+        id: notes
+        uses: gjtorikian/actions/release-please@main
+        with:
+          mode: notes
+          version: ${{ steps.version.outputs.version }}
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.gh_token }}
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; skipping."
+          elif [ -s release-notes.md ]; then
+            gh release create "$TAG" --title "$TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
+
+  publish:
+    needs: release
+    # Explicit condition: skipped jobs propagate transitively through needs
+    # chains, so when create-release-pr is skipped (workflow_dispatch), the
+    # default success() would skip publish even though release succeeded.
+    if: ${{ !cancelled() && needs.release.result == 'success' && inputs.publish }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
+
+      # crates.io trusted publishing: with the workflow-level `id-token: write`,
+      # this exchanges the GitHub OIDC token for a short-lived crates.io token,
+      # so no CARGO_REGISTRY_TOKEN secret is needed. The crate must be
+      # configured as a trusted publisher on crates.io — repository owner,
+      # repository name, and the *calling* workflow's filename (the OIDC token
+      # identifies the top-level workflow, not this reusable one) — or this
+      # step fails.
+      - name: Authenticate with crates.io (OIDC)
+        id: auth
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+
+      # --locked: publish exactly the dependency set that was tested. Requires
+      # Cargo.lock to be committed and in sync, which the prepare job ensures.
+      - name: Publish to crates.io
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
