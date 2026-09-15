@@ -160,13 +160,16 @@ writeVersion(nextVersion);
 
 // `cargo publish --locked` refuses a Cargo.lock whose entry for this crate
 // still carries the previous version, so the release PR must bump both files.
-// `-p <crate>` rewrites only that one entry and `--offline` guarantees every
-// dependency stays pinned exactly where it is — verified: "N unchanged
-// dependencies", same package count before and after.
+// `-p <crate>` is what keeps every dependency pinned: it re-locks only the
+// named package (cargo reports "N unchanged dependencies"). Do NOT add
+// `--offline`: cargo still needs the registry index to re-resolve the graph,
+// and a fresh CI runner has none cached, so it fails with "no matching
+// package named <dep> found — location searched: crates.io index". That
+// passed locally only because of a warm ~/.cargo/registry.
 if (versionType === 'rust') {
   const crate = cargoField('name');
   if (!/^[A-Za-z0-9_-]+$/.test(crate)) throw new Error(`Unexpected crate name: ${crate}`);
-  execSync(`cargo update -p ${crate} --offline`, { stdio: 'inherit' });
+  execSync(`cargo update -p ${crate}`, { stdio: 'inherit' });
 }
 
 const date = new Date().toISOString().slice(0, 10);

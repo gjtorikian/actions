@@ -66,9 +66,10 @@ jobs:
           git config --local user.name "Actions Auto Build"
 
       # Unlike the ruby/node flows, the toolchain is needed *before* compute:
-      # the rust mode runs `cargo update -p <crate> --offline` so Cargo.lock
-      # lands in the release PR alongside Cargo.toml. Without that,
-      # `cargo publish --locked` in the publish job fails on the stale lock.
+      # the rust mode runs `cargo update -p <crate>` so Cargo.lock lands in
+      # the release PR alongside Cargo.toml. Without that, `cargo publish
+      # --locked` in the publish job fails on the stale lock. (Not --offline:
+      # the runner has no registry index cached, and cargo needs it.)
       - name: Install Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
